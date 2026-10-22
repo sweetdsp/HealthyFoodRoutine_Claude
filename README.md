@@ -39,7 +39,7 @@ On every run, `plan_with_checks()` checks the 27 days around the date against al
 
 ```bash
 pip install -r requirements.txt     # anthropic is optional; the rest is standard library
-cp .env.example .env                # fill in emails + SMTP app password
+cp .env.example .env                # fill in emails + Resend API key
 
 python -m amutha_agent              # print today's menu
 python -m amutha_agent --week       # 7-day preview
@@ -48,16 +48,24 @@ python -m amutha_agent --send       # print and email it
 python -m pytest -q                 # run the rule tests
 ```
 
-### Gmail setup
-1. Turn on 2-step verification on the sending Gmail account.
-2. Go to Google Account → Security → **App passwords** and create one.
-3. Put the address in `SMTP_USER` / `EMAIL_FROM` and the 16-letter password in `SMTP_PASSWORD`.
-4. Put Amutha in `AMUTHA_EMAIL` and everyone else, comma-separated, in `FAMILY_EMAILS`.
+### Email setup with Resend (default)
+1. Sign up at [resend.com](https://resend.com) and create an API key → `RESEND_API_KEY`.
+2. Verify a domain you own under *Domains* (add the DNS records Resend shows). Then use an address on it as
+   `EMAIL_FROM`, for example `Amutha's Kitchen <kitchen@yourdomain.com>`.
+   *Without a domain you can test with `onboarding@resend.dev`, but Resend then only delivers to the email
+   address of your own Resend account. To reach the whole family you need a verified domain.*
+3. Put Amutha in `AMUTHA_EMAIL` and everyone else, comma-separated, in `FAMILY_EMAILS`.
+
+The agent calls Resend's REST API with the Python standard library, so it needs no extra package.
+
+### Email setup with SMTP (alternative)
+Set `EMAIL_PROVIDER=smtp` and fill in `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `SMTP_PASSWORD`. For Gmail,
+turn on 2-step verification and create an **App password**.
 
 ## Sending it every morning automatically
 
 **Option A: GitHub Actions (no computer needs to stay on).**
-`.github/workflows/daily-menu.yml` runs every day at **05:30 IST**. In the repository go to *Settings → Secrets and variables → Actions* and add `AMUTHA_EMAIL`, `FAMILY_EMAILS`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, and optionally `ANTHROPIC_API_KEY`. You can also start it by hand from the *Actions* tab ("Run workflow").
+`.github/workflows/daily-menu.yml` runs every day at **05:30 IST**. In the repository go to *Settings → Secrets and variables → Actions* and add `AMUTHA_EMAIL`, `FAMILY_EMAILS`, `RESEND_API_KEY`, `EMAIL_FROM`, and optionally `ANTHROPIC_API_KEY`. (For SMTP instead, add `EMAIL_PROVIDER=smtp` plus the `SMTP_*` secrets.) You can also start it by hand from the *Actions* tab ("Run workflow").
 
 **Option B: a home computer or server.**
 ```bash
@@ -78,7 +86,7 @@ amutha_agent/
   rules.py     # Amutha's 12 rules as code (dish checks + multi-day checks)
   planner.py   # fortnight rhythm + rotating dish lists; same menu for the same date
   render.py    # plain-text and HTML email
-  emailer.py   # SMTP sending (Gmail-ready)
+  emailer.py   # sending via Resend (default) or SMTP
   ai_chef.py   # optional Claude note for the children
   config.py    # settings from environment / .env
   cli.py       # command line + daemon

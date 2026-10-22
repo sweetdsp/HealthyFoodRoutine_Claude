@@ -40,9 +40,8 @@ def run_once(settings: Settings, date: dt.date, send: bool, html_out: str | None
             f.write(html_body)
         log.info("HTML email written to %s", html_out)
     if send:
-        msg = emailer.build_message(settings, render.subject(day), text, html_body)
-        emailer.send(settings, msg)
-        log.info("Menu emailed to %s", ", ".join(settings.recipients))
+        receipt = emailer.send(settings, render.subject(day), text, html_body)
+        log.info("Menu emailed to %s (%s)", ", ".join(settings.recipients), receipt)
 
 
 def run_daemon(settings: Settings, use_ai: bool) -> None:

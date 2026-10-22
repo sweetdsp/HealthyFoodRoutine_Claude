@@ -28,6 +28,8 @@ def _list(value: str) -> list[str]:
 class Settings:
     amutha_email: str = ""
     family_emails: list[str] = field(default_factory=list)
+    email_provider: str = "resend"  # "resend" or "smtp"
+    resend_api_key: str = ""
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
     smtp_user: str = ""
@@ -51,7 +53,11 @@ class Settings:
     def from_env(cls) -> "Settings":
         load_dotenv()
         env = os.environ.get
+        resend_key = env("RESEND_API_KEY", "")
+        provider = env("EMAIL_PROVIDER", "") or ("resend" if resend_key or not env("SMTP_USER") else "smtp")
         return cls(
+            email_provider=provider.lower(),
+            resend_api_key=resend_key,
             amutha_email=env("AMUTHA_EMAIL", ""),
             family_emails=_list(env("FAMILY_EMAILS", "")),
             smtp_host=env("SMTP_HOST", "smtp.gmail.com"),

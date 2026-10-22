@@ -27,3 +27,64 @@ def test_message_goes_to_amutha_and_family():
     assert s.recipients == ["amutha@example.com", "kid@example.com"]
     msg = build_message(s, "subj", "text", "<p>html</p>")
     assert msg["To"] == "amutha@example.com, kid@example.com"
+
+
+class _FakeResponse:
+    def __init__(self, body):
+        self._body = body
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_resend_request(monkeypatch):
+    import json
+
+    from amutha_agent import emailer
+
+    sent = {}
+
+    def fake_urlopen(request, timeout):
+        sent["url"] = request.full_url
+        sent["headers"] = dict(request.header_items())
+        sent["body"] = json.loads(request.data)
+        return _FakeResponse(b'{"id": "abc123"}')
+
+    monkeypatch.setattr(emailer.urllib.request, "urlopen", fake_urlopen)
+    s = Settings(email_provider="resend", resend_api_key="re_test",
+                 amutha_email="amutha@example.com", family_emails=["kid@example.com"],
+                 email_from="Kitchen <kitchen@example.com>")
+    receipt = emailer.send(s, "Menu", "plain", "<p>html</p>")
+
+    assert receipt == "resend:abc123"
+    assert sent["url"] == "https://api.resend.com/emails"
+    assert sent["headers"]["Authorization"] == "Bearer re_test"
+    assert sent["body"] == {"from": "Kitchen <kitchen@example.com>",
+                            "to": ["amutha@example.com", "kid@example.com"],
+                            "subject": "Menu", "html": "<p>html</p>", "text": "plain"}
+
+
+def test_resend_needs_api_key():
+    import pytest
+
+    from amutha_agent import emailer
+
+    s = Settings(email_provider="resend", amutha_email="a@example.com", email_from="k@example.com")
+    with pytest.raises(RuntimeError, match="RESEND_API_KEY"):
+        emailer.send(s, "Menu", "plain", "<p>html</p>")
+
+
+def test_provider_from_env(monkeypatch):
+    for key in ("EMAIL_PROVIDER", "RESEND_API_KEY", "SMTP_USER"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("RESEND_API_KEY", "re_x")
+    assert Settings.from_env().email_provider == "resend"
+    monkeypatch.delenv("RESEND_API_KEY")
+    monkeypatch.setenv("SMTP_USER", "me@gmail.com")
+    assert Settings.from_env().email_provider == "smtp"
