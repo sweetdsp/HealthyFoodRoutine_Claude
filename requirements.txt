@@ -1,0 +1,4 @@
+# Optional: only needed for the AI chef note in the email. The planner and emailer use the standard library.
+anthropic>=2.0
+# Development
+pytest>=8

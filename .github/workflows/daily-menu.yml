@@ -1,0 +1,30 @@
+name: Daily menu email
+
+on:
+  schedule:
+    # 00:00 UTC = 05:30 IST, every day
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - name: Email today's menu
+        env:
+          AMUTHA_EMAIL: ${{ secrets.AMUTHA_EMAIL }}
+          FAMILY_EMAILS: ${{ secrets.FAMILY_EMAILS }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TIMEZONE: Asia/Kolkata
+        run: python -m amutha_agent --send
