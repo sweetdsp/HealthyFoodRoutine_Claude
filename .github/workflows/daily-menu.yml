@@ -2,8 +2,9 @@ name: Daily menu email
 
 on:
   schedule:
-    # 00:00 UTC = 05:30 IST, every day
-    - cron: "0 0 * * *"
+    # 23:37 UTC = 05:07 IST, every day. An off-the-hour minute avoids the
+    # queue GitHub builds up at 00:00 UTC (runs there started ~3 hours late).
+    - cron: "37 23 * * *"
   workflow_dispatch:
 
 jobs:

@@ -58,6 +58,10 @@ python -m pytest -q                 # run the rule tests
 
 The agent calls Resend's REST API with the Python standard library, so it needs no extra package.
 
+**Free setup without a domain:** set `EMAIL_FROM=onboarding@resend.dev` and put your own Resend sign-up
+address in `AMUTHA_EMAIL` and `FAMILY_EMAILS`. The menu then reaches only you, at no cost. To reach other
+people for free, use Gmail SMTP below.
+
 ### Email setup with SMTP (alternative)
 Set `EMAIL_PROVIDER=smtp` and fill in `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `SMTP_PASSWORD`. For Gmail,
 turn on 2-step verification and create an **App password**.
@@ -65,7 +69,7 @@ turn on 2-step verification and create an **App password**.
 ## Sending it every morning automatically
 
 **Option A: GitHub Actions (no computer needs to stay on).**
-`.github/workflows/daily-menu.yml` runs every day at **05:30 IST**. In the repository go to *Settings → Secrets and variables → Actions* and add `AMUTHA_EMAIL`, `FAMILY_EMAILS`, `RESEND_API_KEY`, `EMAIL_FROM`, and optionally `ANTHROPIC_API_KEY`. (For SMTP instead, add `EMAIL_PROVIDER=smtp` plus the `SMTP_*` secrets.) You can also start it by hand from the *Actions* tab ("Run workflow").
+`.github/workflows/daily-menu.yml` runs every day at about **05:07 IST** (GitHub can start scheduled jobs a little late). In the repository go to *Settings → Secrets and variables → Actions* and add `AMUTHA_EMAIL`, `FAMILY_EMAILS`, `RESEND_API_KEY`, `EMAIL_FROM`, and optionally `ANTHROPIC_API_KEY`. (For SMTP instead, add `EMAIL_PROVIDER=smtp` plus the `SMTP_*` secrets.) You can also start it by hand from the *Actions* tab ("Run workflow").
 
 **Option B: a home computer or server.**
 ```bash
