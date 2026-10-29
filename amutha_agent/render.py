@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from . import dishes as D
 from .dishes import Dish
+from .recipes import Recipe, recipe_for
 from .planner import days_to_next_treat, is_treat_night, kid_tip, prep_for_tomorrow, shopping_list
 from .rules import DayMenu
 
@@ -57,6 +58,32 @@ def _treat_line(day: DayMenu) -> str:
     return f"Next Treat Night (Madurai parotta) in {n} day{'s' if n != 1 else ''} - remind the children!"
 
 
+def recipes_for(day: DayMenu) -> list[tuple[str, Dish, Recipe]]:
+    """(meal title, dish, recipe) in meal order, for every dish that has a recipe."""
+    out = []
+    for meal in meals_for(day):
+        for dish in meal.dishes:
+            recipe = recipe_for(dish)
+            if recipe is not None:
+                out.append((meal.title, dish, recipe))
+    return out
+
+
+def _recipes_text(day: DayMenu) -> list[str]:
+    out = ["=" * 70, "TODAY'S RECIPES (each serves 4: 2 adults + 2 children)", "=" * 70, ""]
+    for n, (meal_title, dish, r) in enumerate(recipes_for(day), 1):
+        out.append(f"{n}. {dish.name} ({dish.tamil}) - {meal_title}")
+        out.append(f"   Time: {r.time}")
+        out.append("   Ingredients:")
+        out += [f"     - {i}" for i in r.ingredients]
+        out.append("   Method:")
+        out += [f"     {k}. {step}" for k, step in enumerate(r.steps, 1)]
+        if r.tip:
+            out.append(f"   Tip: {r.tip}")
+        out.append("")
+    return out
+
+
 def to_text(day: DayMenu, family: str, ai_note: str | None = None) -> str:
     out = [f"Vanakkam {family}! Today's healthy menu for {day.date:%A, %d %B %Y}", ""]
     for meal in meals_for(day):
@@ -66,9 +93,12 @@ def to_text(day: DayMenu, family: str, ai_note: str | None = None) -> str:
             out.append(f"      Nutrition: {dish.nutrition}")
             if dish.kid_hook:
                 out.append(f"      For the kids: {dish.kid_hook}")
+            if recipe_for(dish):
+                out.append("      Recipe: see TODAY'S RECIPES below")
         if meal.note:
             out.append(f"  Note: {meal.note}")
         out.append("")
+    out += _recipes_text(day)
     out += [f"Hydration: {D.DAILY_HYDRATION}", "", _treat_line(day), "",
             f"Tip to win the children over: {kid_tip(day.date)}", ""]
     if ai_note:
@@ -87,12 +117,39 @@ def _dish_html(dish: Dish) -> str:
     e = html.escape
     hook = f'<div style="color:#b45309;font-size:13px;margin-top:2px">For the kids: {e(dish.kid_hook)}</div>' \
         if dish.kid_hook else ""
+    see = '<div style="color:#047857;font-size:12px;margin-top:2px">Recipe below &darr;</div>' \
+        if recipe_for(dish) else ""
     return (
         f'<div style="margin:6px 0 10px">'
         f'<div style="font-weight:600;font-size:15px">{e(dish.name)} '
         f'<span style="color:#6b7280;font-weight:400">({e(dish.tamil)})</span></div>'
-        f'<div style="color:#374151;font-size:13px">{e(dish.nutrition)}</div>{hook}</div>'
+        f'<div style="color:#374151;font-size:13px">{e(dish.nutrition)}</div>{hook}{see}</div>'
     )
+
+
+def _recipes_html(day: DayMenu) -> str:
+    e = html.escape
+    cards = []
+    for n, (meal_title, dish, r) in enumerate(recipes_for(day), 1):
+        ingredients = "".join(f"<li style='margin:2px 0'>{e(i)}</li>" for i in r.ingredients)
+        steps = "".join(f"<li style='margin:4px 0'>{e(step)}</li>" for step in r.steps)
+        tip = (f"<div style='background:#fef3c7;border-radius:6px;padding:6px 10px;margin-top:6px;font-size:13px'>"
+               f"<b>Tip:</b> {e(r.tip)}</div>") if r.tip else ""
+        cards.append(
+            f"<div style='border:1px solid #d1fae5;border-radius:8px;padding:12px 14px;margin:12px 0'>"
+            f"<div style='font-size:12px;color:#047857;text-transform:uppercase;letter-spacing:.05em;font-weight:700'>"
+            f"{n}. {e(meal_title)}</div>"
+            f"<div style='font-weight:700;font-size:16px;margin:2px 0'>{e(dish.name)} "
+            f"<span style='color:#6b7280;font-weight:400'>({e(dish.tamil)})</span></div>"
+            f"<div style='font-size:13px;color:#6b7280'>Time: {e(r.time)} &middot; Serves {r.serves}</div>"
+            f"<div style='font-weight:600;margin-top:8px'>Ingredients</div>"
+            f"<ul style='margin:4px 0 0 18px;padding:0;font-size:14px'>{ingredients}</ul>"
+            f"<div style='font-weight:600;margin-top:8px'>Method</div>"
+            f"<ol style='margin:4px 0 0 18px;padding:0;font-size:14px'>{steps}</ol>{tip}</div>"
+        )
+    return ("<h3 style='color:#065f46;margin:22px 0 4px'>Today's Recipes</h3>"
+            "<div style='font-size:13px;color:#6b7280'>Each recipe serves 4 (2 adults + 2 children).</div>"
+            + "".join(cards))
 
 
 def to_html(day: DayMenu, family: str, ai_note: str | None = None) -> str:
@@ -120,6 +177,7 @@ def to_html(day: DayMenu, family: str, ai_note: str | None = None) -> str:
 <div style="color:#374151;margin:4px 0 14px">Vanakkam {e(family)}! Menu for <b>{day.date:%A, %d %B %Y}</b></div>
 <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:12px">{e(_treat_line(day))}</div>
 <table style="width:100%;border-collapse:collapse">{''.join(rows)}</table>
+{_recipes_html(day)}
 <p style="margin:14px 0 0"><b>Hydration:</b> {e(D.DAILY_HYDRATION)}</p>
 <div style="background:#ecfeff;border-radius:8px;padding:12px 14px;margin:14px 0">
 <b>Tip to win the children over:</b><br>{e(kid_tip(day.date))}</div>

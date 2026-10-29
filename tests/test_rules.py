@@ -87,3 +87,27 @@ def test_too_spicy_is_caught():
 def test_words_inside_other_words_are_not_flagged():
     assert screen_free_text("shallots, gingham, hamper") == []
     assert screen_free_text("Add cheese on top") == ["cheese"]
+
+
+def test_every_dish_has_a_recipe_that_follows_the_rules():
+    from amutha_agent.recipes import RECIPES, recipe_text
+    from amutha_agent.rules import MAIDA_WORDS, banned_words_in
+
+    names = {d.name for d in D.ALL_DISHES}
+    assert names == set(RECIPES), "recipes and dishes must match one to one"
+    for dish in D.ALL_DISHES:
+        r = RECIPES[dish.name]
+        assert r.ingredients and r.steps and r.time, dish.name
+        hits = [w for w in banned_words_in(recipe_text(r)) if not (dish.maida and w in MAIDA_WORDS)]
+        assert hits == [], (dish.name, hits)
+
+
+def test_recipes_stand_alone():
+    """Each recipe card is cooked from the email alone, so no 'see the X recipe'."""
+    import re
+
+    from amutha_agent.recipes import RECIPES, recipe_text
+
+    pattern = re.compile(r"\b(as in|see|from) the [^.;]*recipe", re.IGNORECASE)
+    for name, r in RECIPES.items():
+        assert not pattern.search(recipe_text(r)), name

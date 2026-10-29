@@ -15,6 +15,8 @@ Amutha is a gold-medal MSc Nutrition graduate from Madurai. She wants every plat
 | 8:00 PM | Dinner tiffin (or Treat Night) |
 | 9:30 PM | Bedtime drink (manjal paal, ragi malt, badam milk…) |
 
+Below the menu, **Today's Recipes** gives a full recipe for every dish of the day: ingredients with quantities for 4 people (2 adults + 2 teenagers), step-by-step method, cooking/soaking time and a tip. Each recipe is complete on its own, including its chutney, sambar or rasam.
+
 It also includes the Tamil name and a nutrition note for every dish, a tip for getting the children to eat, prep for the next day (soaking, batter, marinating), today's ingredient list, and a countdown to the next Treat Night.
 
 ## Amutha's rules and how the code enforces them
@@ -87,6 +89,7 @@ If `ANTHROPIC_API_KEY` is set, the agent asks Claude for a short, fun note for t
 ```
 amutha_agent/
   dishes.py    # ~115 home-made Tamil/Indian dishes with nutrition notes and kid hooks
+  recipes/     # a full recipe (ingredients + method) for every dish, by meal
   rules.py     # Amutha's 12 rules as code (dish checks + multi-day checks)
   planner.py   # fortnight rhythm + rotating dish lists; same menu for the same date
   render.py    # plain-text and HTML email
@@ -98,4 +101,4 @@ tests/         # two years of menus checked against every rule
 ```
 
 ### Changing the menu
-Add or edit dishes in `amutha_agent/dishes.py`. Run `python -m pytest -q` afterwards. The tests will tell you if the new dish breaks a rule, for example by listing cheese or being too spicy.
+Add or edit dishes in `amutha_agent/dishes.py`, and give each new dish a recipe in `amutha_agent/recipes/`. Run `python -m pytest -q` afterwards. The tests will tell you if the new dish breaks a rule, for example by listing cheese or being too spicy.

@@ -88,3 +88,16 @@ def test_provider_from_env(monkeypatch):
     monkeypatch.delenv("RESEND_API_KEY")
     monkeypatch.setenv("SMTP_USER", "me@gmail.com")
     assert Settings.from_env().email_provider == "smtp"
+
+
+def test_email_contains_every_recipe():
+    from amutha_agent.recipes import recipe_for
+
+    day = plan_day(dt.date(2026, 10, 31))  # Treat Night
+    text = render.to_text(day, "Fam")
+    page = render.to_html(day, "Fam")
+    assert "TODAY'S RECIPES" in text and "Today's Recipes" in page
+    for dish in day.dishes():
+        r = recipe_for(dish)
+        assert r is not None
+        assert r.steps[0] in text
